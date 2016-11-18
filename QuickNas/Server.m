@@ -14,18 +14,15 @@
 {
     return self;
 }
--(instancetype)initWithName:(NSString *)inName withType:(NSString *)inType withIP:(NSString *)inIP withPort:(NSString *)inPort withUsername:(NSString *)inUserName withPassword:(NSString *)inPassword connectAtLaunch:(BOOL)connectAtLaunch atMountpoint:(NSString *)inMountPoint inWorkgroup:(NSString *)inWorkgroup
+-(instancetype)initWithName:(NSString *)inName withType:(NSString *)inType withIP:(NSString *)inIP withUsername:(NSString *)inUserName withPassword:(NSString *)inPassword connectAtLaunch:(BOOL)connectAtLaunch atMountpoint:(NSString *)inMountPoint
 {
-    resourcePath = [[NSBundle mainBundle]resourcePath];
     name=inName;
     type=inType;
     ip=inIP;
-    port=inPort;
     userName=inUserName;
     password=inPassword;
     shouldConnectAtLaunch=connectAtLaunch;
     mountPoint=inMountPoint;
-    workgroup=inWorkgroup;
     return self;
 }
 
@@ -43,10 +40,6 @@
 {
     return ip;
 }
--(NSString *)getPort
-{
-    return port;
-}
 -(NSString *)getUsername
 {
     return userName;
@@ -63,73 +56,47 @@
 {
     return mountPoint;
 }
--(NSString *)getWorkgroup
-{
-    return workgroup;
-}
+
+
 -(void)connect
 {
-    NSArray *args;
+    NSString *scriptToExecute=@"";
+    BOOL proceed=YES;
     if ([type isEqualToString:@"afp"])
     {
-        if ([port isEqualToString:@""])
-        {
-            args=[[NSArray alloc]initWithObjects:@"-t", type, [[[[[[type stringByAppendingString:@"://"]stringByAppendingString:userName]stringByAppendingString:@":"]stringByAppendingString:password]stringByAppendingString:@"@"]stringByAppendingString:ip], mountPoint, nil];
-        }
-        else
-        {
-            args=[[NSArray alloc]initWithObjects:@"-t", type, [[[[[[[[type stringByAppendingString:@"://"]stringByAppendingString:userName]stringByAppendingString:@":"]stringByAppendingString:password]stringByAppendingString:@"@"]stringByAppendingString:ip] stringByAppendingString:@":"]stringByAppendingString:port], mountPoint, nil];
-        }
+        scriptToExecute=[NSString stringWithFormat:@"mount -t afp afp://%@:%@@%@ %@", userName, password, ip, mountPoint];
     }
     else if ([type isEqualToString:@"smbfs"])
     {
-        if ([port isEqualToString:@""])
+        scriptToExecute=[NSString stringWithFormat:@"mount -t smbfs smb://%@:%@@%@ %@", userName, password, ip, mountPoint];
+    }
+    if (![[NSFileManager defaultManager]fileExistsAtPath:mountPoint])
+    {
+        proceed=NO;
+        NSAlert *alert = [[NSAlert alloc] init];
+        [alert setMessageText:@"Mountpoint Doesn't Exist"];
+        [alert setInformativeText:@"The mountpoint at \"%@\" doesn't exist. Would you like to create this directory?"];
+        [alert addButtonWithTitle:@"Yes"];
+        [alert addButtonWithTitle:@"No"];
+        if ([alert runModal]==NSAlertFirstButtonReturn)
         {
-            /*args=[[NSArray alloc]initWithObjects:@"-t", type, [[[[[[[[[@"smb://" stringByAppendingString:@"\'"]stringByAppendingString:workgroup] stringByAppendingString:@";"] stringByAppendingString:userName]stringByAppendingString:@":"]stringByAppendingString:password] stringByAppendingString:@"\'"] stringByAppendingString:@"@"]stringByAppendingString:ip], mountPoint, nil];*/
-            args=[NSArray arrayWithObjects:@"-t", @"smbfs", @"smb://\'WORKGROUP;Administrator:Wewillburythem2016\'@192.168.1.6/Apps", @"/Users/collinmistr/Desktop/test",nil];
-        }
-        else
-        {
-            //args=[[NSArray alloc]initWithObjects:@"-t", type, [[[[[[[[[[[@"smb://" stringByAppendingString:@"\'"]stringByAppendingString:workgroup] stringByAppendingString:@";"] stringByAppendingString:userName]stringByAppendingString:@":"]stringByAppendingString:password] stringByAppendingString:@"\'"] stringByAppendingString:@"@"]stringByAppendingString:ip] stringByAppendingString:@":"]stringByAppendingString:port], mountPoint, nil];
+            [[NSFileManager defaultManager]createDirectoryAtPath:mountPoint withIntermediateDirectories:YES attributes:nil error:nil];
+            proceed=YES;
         }
     }
-    OptionBits flags = 0;
-    NSURL * url = [NSURL URLWithString: @"afp://192.168.1.143/collinmistr"];
-    //NSURL * mountDir = [NSURL URLWithString: @"/Users/collinmistr/Desktop/test"];
-    
-    OSStatus err = FSMountServerVolumeSync (
-                             (__bridge CFURLRef) url,
-                             nil,
-                             (CFStringRef) @"collinmistr",
-                             (CFStringRef) @"guest",
-                             nil,
-                             flags);
-    if (err != noErr)
+    if (proceed)
     {
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Error"];
-        [alert setInformativeText:[NSString stringWithFormat:@"%d", err]];
-        [alert addButtonWithTitle:@"OK"];
-        [alert runModal];
+        NSDictionary *error=nil;
+        NSAppleScript *scpt=[[NSAppleScript alloc]initWithSource:[NSString stringWithFormat:@"do shell script\"%@\"", scriptToExecute]];
+        [scpt executeAndReturnError:&error];
+        if (error)
+        {
+            NSAlert *alert = [[NSAlert alloc] init];
+            [alert setMessageText:@"Alert"];
+            [alert setInformativeText:[error objectForKey:@"NSAppleScriptErrorMessage"]];
+            [alert addButtonWithTitle:@"OK"];
+            [alert performSelectorOnMainThread:@selector(runModal) withObject:nil waitUntilDone:YES];
+        }
     }
-    /*NSTask *connect=[[NSTask alloc]init];
-    [connect setLaunchPath:@"/sbin/mount"];
-    [connect setArguments:args];
-    NSPipe * out = [NSPipe pipe];
-    [connect setStandardError:out];
-    [connect launch];
-    [connect waitUntilExit];
-    NSFileHandle * read = [out fileHandleForReading];
-    NSData * dataRead = [read readDataToEndOfFile];
-    NSString * stringRead = [[NSString alloc] initWithData:dataRead encoding:NSUTF8StringEncoding];
-    if (![stringRead isEqualToString:@""])
-    {
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Error"];
-        [alert setInformativeText:stringRead];
-        [alert addButtonWithTitle:@"OK"];
-        [alert runModal];
-    }*/
-    
 }
 @end

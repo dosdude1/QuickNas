@@ -14,6 +14,7 @@
         <customObject id="-3" userLabel="Application"/>
         <customObject id="Voe-Tx-rLC" customClass="AppDelegate">
             <connections>
+                <outlet property="connectAllServersMenu" destination="Fbf-0r-ylh" id="xNN-ll-Kmi"/>
                 <outlet property="mainMenu" destination="CqH-eI-jKw" id="vD7-IL-djT"/>
                 <outlet property="openAtLoginMenuItem" destination="KEJ-Rw-Rbr" id="mDE-ZD-bnL"/>
                 <outlet property="serversMenu" destination="tVR-aL-9dh" id="5P7-80-cG5"/>
@@ -679,6 +680,12 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="showManageServersWindow:" target="Voe-Tx-rLC" id="uDg-6J-Etw"/>
+                    </connections>
+                </menuItem>
+                <menuItem title="Connect All Servers" id="Fbf-0r-ylh">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <action selector="connectAllServers:" target="Voe-Tx-rLC" id="cLM-fW-IRU"/>
                     </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="r2w-J4-2Nn"/>

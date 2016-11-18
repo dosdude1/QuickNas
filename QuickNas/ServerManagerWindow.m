@@ -32,22 +32,15 @@
     [self.serverTable setDelegate:self];
     [self.serverTable setDataSource:self];
     [self.serverTable setDoubleAction:@selector(didDoubleClickRow)];
+    [self.serverTable setAction:@selector(didClickRow)];
     serverTypes = [[NSArray alloc]initWithObjects:@"Select Type...", @"afp", @"smbfs", nil];
     [self.serverTypeList addItemsWithTitles:serverTypes];
-    [self.serverTypeList setAction:@selector(setOptions)];
     [self.serverTypeList setTarget:self];
-}
--(void)setOptions
-{
-    if ([[self.serverTypeList titleOfSelectedItem]isEqualToString:@"smbfs"])
-    {
-        [self.workgroupField setEnabled:YES];
-    }
-    else
-    {
-        [self.workgroupField setStringValue:@""];
-        [self.workgroupField setEnabled:NO];
-    }
+    contextualMenu = [[NSMenu alloc]init];
+    [contextualMenu setAutoenablesItems:NO];
+    [contextualMenu addItemWithTitle:@"Edit..." action:@selector(editServer) keyEquivalent:@""];
+    [contextualMenu addItemWithTitle:@"Delete" action:@selector(removeServer:) keyEquivalent:@""];
+    [self.serverTable setMenu:contextualMenu];
 }
 -(void)getServerData:(ServerManager *)inMan
 {
@@ -116,14 +109,6 @@
         [alert addButtonWithTitle:@"OK"];
         [alert runModal];
     }
-    else if ([[self.serverTypeList titleOfSelectedItem]isEqualToString:@"smbfs"] && [[self.workgroupField stringValue]isEqualToString:@""])
-    {
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"Invalid SMBFS Configuration"];
-        [alert setInformativeText:@"You must include a Workgroup or Domain name to connect to a SMB server."];
-        [alert addButtonWithTitle:@"OK"];
-        [alert runModal];
-    }
     else
     {
         BOOL proceed=YES;
@@ -145,11 +130,11 @@
         {
             if (didSelectRow)
             {
-                [serverMan setServer:clickedRow withName:[self.serverNameField stringValue] ofType:[self.serverTypeList titleOfSelectedItem] withIP:[self.serverIPField stringValue] withPort:[self.portField stringValue] withUsername:[self.userNameField stringValue] withPassword:[self.passwordField stringValue]connectAtLaunch:[self.connectOnLaunchBox state] atMountPoint:[self.mountPointField stringValue]inWorkgroup:[self.workgroupField stringValue]];
+                [serverMan setServer:clickedRow withName:[self.serverNameField stringValue] ofType:[self.serverTypeList titleOfSelectedItem] withIP:[self.serverIPField stringValue] withUsername:[self.userNameField stringValue] withPassword:[self.passwordField stringValue]connectAtLaunch:[self.connectOnLaunchBox state] atMountPoint:[self.mountPointField stringValue]];
             }
             else
             {
-                [serverMan addServer:[self.serverNameField stringValue] ofType:[self.serverTypeList titleOfSelectedItem] withIP:[self.serverIPField stringValue] withPort:[self.portField stringValue] withUsername:[self.userNameField stringValue] withPassword:[self.passwordField stringValue]connectAtLaunch:[self.connectOnLaunchBox state] atMountPoint:[self.mountPointField stringValue] inWorkgroup:[self.workgroupField stringValue]];
+                [serverMan addServer:[self.serverNameField stringValue] ofType:[self.serverTypeList titleOfSelectedItem] withIP:[self.serverIPField stringValue] withUsername:[self.userNameField stringValue] withPassword:[self.passwordField stringValue]connectAtLaunch:[self.connectOnLaunchBox state] atMountPoint:[self.mountPointField stringValue]];
             }
             [self closeSheet:self];
             [self loadData];
@@ -161,25 +146,21 @@
 
 - (IBAction)removeServer:(id)sender
 {
-    NSInteger selectedRow=[self.serverTable selectedRow];
-    if (selectedRow ==-1)
+    clickedRow=[self.serverTable clickedRow];
+    if (clickedRow == -1)
     {
-        NSAlert *alert = [[NSAlert alloc] init];
-        [alert setMessageText:@"No Server Selected"];
-        [alert setInformativeText:@"Please select a server in the list before trying to delete it."];
-        [alert addButtonWithTitle:@"OK"];
-        [alert runModal];
+        clickedRow=[self.serverTable selectedRow];
     }
-    else
+    if (clickedRow>-1)
     {
         NSAlert *alert = [[NSAlert alloc] init];
         [alert setMessageText:@"Delete Server"];
-        [alert setInformativeText:[NSString stringWithFormat:@"Are you sure you want to delete the server named \"%@\"?", [[serverMan getServer:(int)selectedRow] getName]]];
+        [alert setInformativeText:[NSString stringWithFormat:@"Are you sure you want to delete the server named \"%@\"?", [[serverMan getServer:(int)clickedRow] getName]]];
         [alert addButtonWithTitle:@"Cancel"];
         [alert addButtonWithTitle:@"Yes"];
         if ([alert runModal]==NSAlertSecondButtonReturn)
         {
-            [serverMan removeServer:(int)selectedRow];
+            [serverMan removeServer:(int)clickedRow];
             [self loadData];
             [self.serverTable reloadData];
         }
@@ -189,16 +170,18 @@
 {
     [self.serverNameField setStringValue:@""];
     [self.serverIPField setStringValue:@""];
-    [self.portField setStringValue:@""];
     [self.userNameField setStringValue:@""];
     [self.passwordField setStringValue:@""];
     [self.mountPointField setStringValue:@""];
-    [self.workgroupField setStringValue:@""];
-    [self.workgroupField setEnabled:NO];
     [self.serverTypeList selectItemAtIndex:0];
     [self.connectOnLaunchBox setState:NSOffState];
 }
 -(void)didDoubleClickRow
+{
+    clickedRow=[self.serverTable clickedRow];
+    [self openEditingForServerIndex:(int)clickedRow];
+}
+-(void)editServer
 {
     clickedRow=[self.serverTable clickedRow];
     [self openEditingForServerIndex:(int)clickedRow];
@@ -211,26 +194,43 @@
     {
         [self.serverNameField setStringValue:[[serverMan getServer:(int)clickedRow]getName]];
         [self.serverIPField setStringValue:[[serverMan getServer:(int)clickedRow]getIP]];
-        [self.portField setStringValue:[[serverMan getServer:(int)clickedRow]getPort]];
         [self.userNameField setStringValue:[[serverMan getServer:(int)clickedRow]getUsername]];
         [self.passwordField setStringValue:[[serverMan getServer:(int)clickedRow]getPassword]];
         [self.serverTypeList selectItemWithTitle:[[serverMan getServer:(int)clickedRow]getType]];
         [self.connectOnLaunchBox setState:[[NSNumber numberWithBool:[[serverMan getServer:(int)clickedRow]shouldConnectAtLaunch]]integerValue]];
         [self.mountPointField setStringValue:[[serverMan getServer:(int)clickedRow]getMountPoint]];
-        [self.workgroupField setStringValue:[[serverMan getServer:(int)clickedRow]getWorkgroup]];
-        if ([[[serverMan getServer:(int)clickedRow]getType]isEqualToString:@"smbfs"])
-        {
-            [self.workgroupField setEnabled:YES];
-        }
-        else
-        {
-            [self.workgroupField setEnabled:NO];
-        }
+        
         [NSApp beginSheet:self.serverEntryWindow
            modalForWindow:(NSWindow *)self.mainWindow
             modalDelegate:self
            didEndSelector:nil
               contextInfo:nil];
+    }
+}
+-(void)didClickRow
+{
+    if ([self.serverTable clickedRow] > -1)
+    {
+        [self.removeServerButton setEnabled:YES];
+    }
+    else
+    {
+        [self.removeServerButton setEnabled:NO];
+    }
+}
+- (IBAction)browseForMountpt:(id)sender
+{
+    NSOpenPanel *panel = [NSOpenPanel openPanel];
+    [panel setCanChooseFiles:NO];
+    [panel setCanChooseDirectories:YES];
+    [panel setAllowsMultipleSelection:NO];
+    
+    NSInteger clicked = [panel runModal];
+    
+    if (clicked == NSFileHandlingPanelOKButton)
+    {
+        NSArray* files = [panel URLs];
+        [self.mountPointField setStringValue:[[files objectAtIndex:0]path]];
     }
 }
 @end

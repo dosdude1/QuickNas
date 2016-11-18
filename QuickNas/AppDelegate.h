@@ -13,16 +13,21 @@
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 {
     NSStatusItem *statusItem;
+    NSString *resourcePath;
     ServerManager *serverMan;
     ServerManagerWindow *manWindow;
     int selectedMenuIndex;
     NSMutableDictionary *preferences;
     NSString *applicationSupportDirectory;
+    int currentFrame;
+    NSTimer *animTimer;
 }
 @property (strong) IBOutlet NSMenu *mainMenu;
 @property (strong) IBOutlet NSMenuItem *serversMenu;
 - (IBAction)showManageServersWindow:(id)sender;
 - (IBAction)toggleOpenAtLogin:(id)sender;
 @property (strong) IBOutlet NSMenuItem *openAtLoginMenuItem;
+- (IBAction)connectAllServers:(id)sender;
+@property (strong) IBOutlet NSMenuItem *connectAllServersMenu;
 
 @end

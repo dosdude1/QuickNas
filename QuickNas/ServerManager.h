@@ -14,11 +14,21 @@
     NSString *applicationSupportDirectory;
     NSMutableArray *serverList;
     NSMutableArray *servers;
+    int numServerToConnect;
+    NSStatusItem *statusItem;
+    NSMenu *mainMenu;
+    int currentFrame;
+    NSTimer *animTimer;
+    int serverToConnect;
 }
 -(id)init;
--(void)addServer:(NSString *)name ofType:(NSString *)serverType withIP:(NSString *)ipIn withPort:(NSString *)port withUsername:(NSString *)userName withPassword:(NSString *)password connectAtLaunch:(BOOL)connectAtLaunch atMountPoint:(NSString *)inMountPoint inWorkgroup:(NSString *)inWorkgroup;
+-(void)getMenuItems:(NSStatusItem *)inStatusItem withMenu:(NSMenu *)inMenu;
+-(void)addServer:(NSString *)name ofType:(NSString *)serverType withIP:(NSString *)ipIn withUsername:(NSString *)userName withPassword:(NSString *)password connectAtLaunch:(BOOL)connectAtLaunch atMountPoint:(NSString *)inMountPoint;
 -(void)removeServer:(int)toRemove;
 -(Server *)getServer:(int)index;
+-(void)connectServer:(int)index;
 -(NSInteger)getNumServers;
--(void)setServer:(NSInteger)toSet withName:(NSString *)name ofType:(NSString *)serverType withIP:(NSString *)ipIn withPort:(NSString *)port withUsername:(NSString *)userName withPassword:(NSString *)password connectAtLaunch:(BOOL)connectAtLaunch atMountPoint:(NSString *)inMountPoint inWorkgroup:(NSString *)inWorkgroup;
+-(void)setServer:(NSInteger)toSet withName:(NSString *)name ofType:(NSString *)serverType withIP:(NSString *)ipIn withUsername:(NSString *)userName withPassword:(NSString *)password connectAtLaunch:(BOOL)connectAtLaunch atMountPoint:(NSString *)inMountPoint;
+-(void)connectAllServers;
+-(void)connectServersWithIndices:(NSArray *)indices;
 @end

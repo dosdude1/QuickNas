@@ -13,7 +13,8 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
-    NSLog([[NSBundle mainBundle]bundlePath]);
+    resourcePath=[[NSBundle mainBundle]resourcePath];
+    [self.mainMenu setAutoenablesItems:NO];
     statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [statusItem setImage:[NSImage imageNamed:@"nas-16.png"]];
     [statusItem setMenu:self.mainMenu];
@@ -38,13 +39,16 @@
     [self.openAtLoginMenuItem setState:[[preferences objectForKey:@"openAtLogin"]boolValue]];
     [[NSNotificationCenter defaultCenter]addObserver:self selector:@selector(initMenu) name:@"didChangeSettings" object:nil];
     [self initMenu];
+    [serverMan getMenuItems:statusItem withMenu:self.mainMenu];
+    NSMutableArray *serversToConnect = [[NSMutableArray alloc]init];
     for (int i=0; i<[serverMan getNumServers]; i++)
     {
         if ([[serverMan getServer:i]shouldConnectAtLaunch])
         {
-            [[serverMan getServer:i]connect];
+            [serversToConnect addObject:[NSNumber numberWithInt:i]];
         }
     }
+    [serverMan connectServersWithIndices:[NSArray arrayWithArray:serversToConnect]];
 }
 -(void)initMenu
 {
@@ -89,7 +93,7 @@
 -(void)connectToServer:(id)sender
 {
     int selectedIndex=(int)[[sender representedObject]integerValue];
-    [[serverMan getServer:selectedIndex] connect];
+    [serverMan connectServer:selectedIndex];
 }
 -(void)editServer:(id)sender
 {
@@ -108,7 +112,7 @@
     {
         shouldConnect=YES;
     }
-    [serverMan setServer:selectedIndex withName:[[serverMan getServer:selectedIndex]getName] ofType:[[serverMan getServer:selectedIndex]getType] withIP:[[serverMan getServer:selectedIndex]getIP] withPort:[[serverMan getServer:selectedIndex]getPort] withUsername:[[serverMan getServer:selectedIndex]getUsername] withPassword:[[serverMan getServer:selectedIndex]getPassword] connectAtLaunch:shouldConnect atMountPoint:[[serverMan getServer:selectedIndex]getMountPoint] inWorkgroup:[[serverMan getServer:selectedIndex]getWorkgroup]];
+    [serverMan setServer:selectedIndex withName:[[serverMan getServer:selectedIndex]getName] ofType:[[serverMan getServer:selectedIndex]getType] withIP:[[serverMan getServer:selectedIndex]getIP] withUsername:[[serverMan getServer:selectedIndex]getUsername] withPassword:[[serverMan getServer:selectedIndex]getPassword] connectAtLaunch:shouldConnect atMountPoint:[[serverMan getServer:selectedIndex]getMountPoint]];
     [self initMenu];
 }
 -(IBAction)showAboutWindow:(id)sender
@@ -143,6 +147,11 @@
         [preferences setObject:[NSNumber numberWithBool:YES] forKey:@"openAtLogin"];
     }
     [preferences writeToFile:[applicationSupportDirectory stringByAppendingPathComponent:@"QuickNas/preferences.plist"] atomically:YES];
+}
+
+- (IBAction)connectAllServers:(id)sender
+{
+    [serverMan connectAllServers];
 }
 
 @end

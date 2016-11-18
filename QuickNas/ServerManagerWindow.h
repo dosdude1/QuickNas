@@ -17,6 +17,7 @@
     NSInteger clickedRow;
     NSString *applicationSupportDirectory;
     NSArray *serverTypes;
+    NSMenu *contextualMenu;
 }
 
 @property (strong) IBOutlet NSWindow *mainWindow;
@@ -28,7 +29,6 @@
 - (IBAction)closeSheet:(id)sender;
 @property (strong) IBOutlet NSTextField *serverNameField;
 @property (strong) IBOutlet NSTextField *serverIPField;
-@property (strong) IBOutlet NSTextField *portField;
 @property (strong) IBOutlet NSTextField *userNameField;
 @property (strong) IBOutlet NSSecureTextField *passwordField;
 @property (strong) IBOutlet NSButton *connectOnLaunchBox;
@@ -37,6 +37,7 @@
 -(void)openEditingForServerIndex:(int)index;
 @property (strong) IBOutlet NSPopUpButton *serverTypeList;
 @property (strong) IBOutlet NSTextField *mountPointField;
-@property (strong) IBOutlet NSTextField *workgroupField;
+- (IBAction)browseForMountpt:(id)sender;
+@property (strong) IBOutlet NSButton *removeServerButton;
 
 @end
